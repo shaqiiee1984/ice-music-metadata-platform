@@ -1,0 +1,248 @@
+<div class="container">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-title">
+      <h2>ICE Music Metadata</h2>
+      <span class="subtext">Catalog Admin Console</span>
+    </div>
+    <div class="header-nav">
+      <span class="status-indicator" [ngClass]="api.isEditor() ? 'status-editor' : 'status-viewer'">
+        {{ api.isEditor() ? 'Role: EDITOR (JWT active)' : 'Role: VIEWER' }}
+      </span>
+      <button (click)="toggleEditorMode()" class="btn btn-secondary btn-sm">
+        {{ api.isEditor() ? 'Switch to Viewer' : 'Switch to Editor' }}
+      </button>
+      <a href="http://localhost:8080/swagger-ui.html" target="_blank" class="btn btn-secondary btn-sm">OpenAPI Swagger</a>
+      <a href="http://localhost:8080/actuator/health" target="_blank" class="btn btn-secondary btn-sm">Actuator Health</a>
+    </div>
+  </header>
+
+  <!-- Notification Banner -->
+  <div *ngIf="toastMessage()" class="alert-banner" [ngClass]="'alert-' + toastMessage()?.type">
+    {{ toastMessage()?.text }}
+  </div>
+
+  <!-- Artist of the Day Box -->
+  <section class="panel aotd-panel" *ngIf="artistOfTheDay() as aotd">
+    <div class="panel-header">
+      <strong>Artist of the Day</strong>
+      <span class="countdown-badge">Next cycle in: <span class="mono">{{ countdownDisplay() }}</span> (UTC midnight)</span>
+    </div>
+    <div class="aotd-body">
+      <div class="aotd-main">
+        <div class="aotd-name">{{ aotd.canonicalName }}</div>
+        <div class="aotd-aliases" *ngIf="aotd.aliases && aotd.aliases.length > 0">
+          Aliases: <span class="mono">{{ aotd.aliases.join(', ') }}</span>
+        </div>
+        <div class="aotd-meta">
+          UTC Date: <span class="mono">{{ aotd.utcDate }}</span> | 
+          Cycle position: <span class="mono">Day {{ aotd.cycleDayIndex }} of {{ aotd.totalActiveArtists }}</span> | 
+          Formula: <span class="mono">index = (epochDay mod {{ aotd.totalActiveArtists }})</span>
+        </div>
+      </div>
+      <div>
+        <button (click)="selectArtist(aotd.id)" class="btn btn-secondary btn-sm">Select Artist</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content: Artists & Tracks -->
+  <div class="main-layout">
+    <!-- Left Column: Artist List -->
+    <div class="panel roster-panel">
+      <div class="panel-header flex-between">
+        <strong>Artists ({{ artists().length }})</strong>
+        <button (click)="openNewArtistModal()" class="btn btn-primary btn-sm">+ Add Artist</button>
+      </div>
+      <div class="artist-list">
+        <div 
+          *ngFor="let a of artists()" 
+          class="artist-row" 
+          [class.selected-row]="a.id === selectedArtistId()"
+          (click)="selectArtist(a.id)">
+          <div class="artist-info">
+            <div class="artist-title">
+              {{ a.canonicalName }}
+            </div>
+            <div class="artist-alias-list" *ngIf="a.aliases?.length">
+              aka: {{ a.aliases.join(', ') }}
+            </div>
+          </div>
+          <button 
+            class="btn btn-secondary btn-sm" 
+            (click)="$event.stopPropagation(); openEditArtistModal(a)"
+            title="Edit artist name or aliases">
+            Edit
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Track Catalogue -->
+    <div class="panel tracks-panel">
+      <div *ngIf="discography() as disco; else selectPrompt">
+        <div class="panel-header flex-between">
+          <div>
+            <strong>Catalogue: {{ disco.canonicalName }}</strong>
+            <span *ngIf="disco.aliases?.length" class="subtext" style="margin-left: 8px;">
+              (Aliases: {{ disco.aliases.join(', ') }})
+            </span>
+          </div>
+          <button (click)="openAddTrackModal()" class="btn btn-primary btn-sm">+ Add Track</button>
+        </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar">
+          <label>Filter by Genre:</label>
+          <select [(ngModel)]="selectedGenre" (change)="filterByGenre(selectedGenre())" class="form-select genre-select">
+            <option [ngValue]="null">-- All Genres ({{ disco.tracks.totalElements }}) --</option>
+            <option *ngFor="let g of disco.availableGenres" [ngValue]="g">{{ g }}</option>
+          </select>
+          <span class="subtext">Showing {{ disco.tracks.content.length }} of {{ disco.tracks.totalElements }} tracks</span>
+        </div>
+
+        <!-- Track Table -->
+        <div class="table-wrap">
+          <table *ngIf="disco.tracks.content.length > 0; else noTracks">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>Track Title</th>
+                <th>Genre</th>
+                <th>Duration</th>
+                <th>ISRC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let track of disco.tracks.content; let i = index">
+                <td class="mono" style="text-align: center;">{{ i + 1 }}</td>
+                <td><strong>{{ track.title }}</strong></td>
+                <td>{{ track.genre }}</td>
+                <td class="mono">{{ track.durationFormatted }}</td>
+                <td class="mono">{{ track.isrc || '-' }}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <ng-template #noTracks>
+            <div class="empty-box">No tracks found for this filter.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <ng-template #selectPrompt>
+        <div class="empty-box">Select an artist from the left to view catalogue.</div>
+      </ng-template>
+    </div>
+  </div>
+
+  <!-- Modal: Add Track -->
+  <div class="modal-overlay" *ngIf="showAddTrackModal" (click)="showAddTrackModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3 style="margin-bottom: 12px; border-bottom: 1px solid #d0d7de; padding-bottom: 6px;">Add Track</h3>
+      <div class="form-group">
+        <label class="form-label">Artist</label>
+        <select [(ngModel)]="newTrack.artistId" class="form-select">
+          <option *ngFor="let a of artists()" [value]="a.id">{{ a.canonicalName }}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Track Title *</label>
+        <input type="text" [(ngModel)]="newTrack.title" class="form-input" placeholder="Title" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Genre *</label>
+        <input type="text" [(ngModel)]="newTrack.genre" class="form-input" placeholder="e.g. Rock, Pop, Hip-Hop" />
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Duration Minutes</label>
+          <input type="number" [(ngModel)]="newTrack.durationMinutes" min="0" class="form-input" />
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label class="form-label">Duration Seconds</label>
+          <input type="number" [(ngModel)]="newTrack.durationSeconds" min="0" max="59" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ISRC Code (Optional)</label>
+        <input type="text" [(ngModel)]="newTrack.isrc" class="form-input" placeholder="e.g. USUM71600001" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-secondary" (click)="showAddTrackModal = false">Cancel</button>
+        <button class="btn btn-primary" (click)="submitAddTrack()">Save Track</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Artist -->
+  <div class="modal-overlay" *ngIf="showEditArtistModal" (click)="showEditArtistModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3 style="margin-bottom: 12px; border-bottom: 1px solid #d0d7de; padding-bottom: 6px;">Edit Artist</h3>
+      <p style="font-size: 12px; color: #57606a; margin-bottom: 12px; background: #fff8c5; border: 1px solid #d4a72c; padding: 6px 8px; border-radius: 4px;">
+        Note: Modifying the canonical name will automatically archive the previous name (<strong>{{ editArtistData.currentName }}</strong>) as an alias.
+      </p>
+
+      <div class="form-group">
+        <label class="form-label">Canonical Name *</label>
+        <input type="text" [(ngModel)]="editArtistData.canonicalName" class="form-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Add Alias</label>
+        <div style="display: flex; gap: 6px;">
+          <input 
+            type="text" 
+            [(ngModel)]="editArtistData.newAlias" 
+            (keyup.enter)="addAliasToEdit()"
+            class="form-input" 
+            placeholder="Type alias and press Enter" />
+          <button class="btn btn-secondary" (click)="addAliasToEdit()">Add</button>
+        </div>
+      </div>
+
+      <div class="form-group" *ngIf="editArtistData.aliases.length > 0">
+        <label class="form-label">Current Aliases:</label>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <span 
+            *ngFor="let al of editArtistData.aliases" 
+            style="background: #eef1f4; border: 1px solid #d0d7de; padding: 2px 6px; border-radius: 3px; font-size: 12px;">
+            {{ al }}
+            <a href="javascript:void(0)" (click)="removeAliasFromEdit(al)" style="color: #cf222e; margin-left: 4px; text-decoration: none;">&times;</a>
+          </span>
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-secondary" (click)="showEditArtistModal = false">Cancel</button>
+        <button class="btn btn-primary" (click)="submitEditArtist()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: New Artist -->
+  <div class="modal-overlay" *ngIf="showNewArtistModal" (click)="showNewArtistModal = false">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <h3 style="margin-bottom: 12px; border-bottom: 1px solid #d0d7de; padding-bottom: 6px;">New Artist</h3>
+      <div class="form-group">
+        <label class="form-label">Canonical Name *</label>
+        <input type="text" [(ngModel)]="newArtistData.canonicalName" class="form-input" placeholder="Artist Name" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Initial Aliases (Comma-separated)</label>
+        <input type="text" [(ngModel)]="newArtistData.aliasesText" class="form-input" placeholder="e.g. Alias 1, Alias 2" />
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+        <button class="btn btn-secondary" (click)="showNewArtistModal = false">Cancel</button>
+        <button class="btn btn-primary" (click)="submitNewArtist()">Save Artist</button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,145 @@
+/* Minimalist, Boring Developer UI Design */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background-color: #f4f5f7;
+  color: #172b4d;
+  line-height: 1.45;
+  font-size: 14px;
+}
+
+code, pre, .mono {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 13px;
+}
+
+/* Boring Standard Buttons */
+.btn {
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  line-height: 18px;
+  color: #24292f;
+  background-color: #f6f8fa;
+  border: 1px solid rgba(27, 31, 36, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.btn:hover {
+  background-color: #f3f4f6;
+  border-color: rgba(27, 31, 36, 0.2);
+}
+
+.btn-primary {
+  color: #ffffff;
+  background-color: #0969da;
+  border-color: #0969da;
+}
+
+.btn-primary:hover {
+  background-color: #0860ca;
+  border-color: #0860ca;
+}
+
+.btn-secondary {
+  color: #24292f;
+  background-color: #ffffff;
+  border-color: #d0d7de;
+}
+
+.btn-secondary:hover {
+  background-color: #f6f8fa;
+}
+
+.btn-sm {
+  padding: 3px 8px;
+  font-size: 12px;
+}
+
+/* Boring Forms */
+.form-group {
+  margin-bottom: 12px;
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #24292f;
+  margin-bottom: 4px;
+}
+
+.form-input, .form-select {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: #24292f;
+  background-color: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 4px;
+}
+
+.form-input:focus, .form-select:focus {
+  outline: none;
+  border-color: #0969da;
+  box-shadow: 0 0 0 2px rgba(9, 105, 218, 0.2);
+}
+
+/* Boring Standard Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  background-color: #ffffff;
+}
+
+table th, table td {
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  text-align: left;
+}
+
+table th {
+  background-color: #f6f8fa;
+  font-weight: 600;
+  color: #24292f;
+}
+
+table tr:hover {
+  background-color: #f6f8fa;
+}
+
+/* Boring Simple Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  width: 100%;
+  max-width: 500px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
+}

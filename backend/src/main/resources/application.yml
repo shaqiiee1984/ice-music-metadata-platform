@@ -1,0 +1,90 @@
+spring:
+  application:
+    name: ice-music-platform
+  profiles:
+    active: dev
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 25
+
+  cache:
+    type: caffeine
+    cache-names:
+      - artistOfTheDay
+    caffeine:
+      spec: maximumSize=100,expireAfterWrite=24h
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+
+# Security & JWT Configuration
+app:
+  security:
+    jwt:
+      secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+      expiration-ms: 86400000 # 24 hours
+    admin:
+      username: "admin"
+      password: "password123"
+
+# Springdoc OpenAPI UI
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+# Management & DevSecOps Observability
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:mem:ice_music_db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=PostgreSQL
+    driverClassName: org.h2.Driver
+    username: sa
+    password: ""
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/ice_music}
+    username: ${SPRING_DATASOURCE_USERNAME:ice_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:ice_password}
+    driver-class-name: org.postgresql.Driver
