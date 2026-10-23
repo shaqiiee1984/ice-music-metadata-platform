@@ -1,0 +1,58 @@
+services:
+  # Database Layer (PostgreSQL 16) - Strictly Internal Docker Network
+  postgres:
+    image: postgres:16-alpine
+    container_name: ice-music-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ice_user
+      POSTGRES_PASSWORD: ice_password
+      POSTGRES_DB: ice_music
+    # Port 5432 is intentionally NOT exposed to the host for AWS security
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ice_user -d ice_music"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Spring Boot Backend - Strictly Internal Docker Network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ice-music-backend
+    restart: unless-stopped
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ice_music
+      SPRING_DATASOURCE_USERNAME: ice_user
+      SPRING_DATASOURCE_PASSWORD: ice_password
+      JAVA_OPTS: "-XX:+UseContainerSupport -Xmx256m -Xms128m -XX:+UseSerialGC -Djava.security.egd=file:/dev/./urandom"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Port 8080 is intentionally NOT exposed to the host; proxied by Nginx
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Angular 18 Frontend SPA (Nginx Reverse Proxy) - Only Port 80 Publicly Accessible
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ice-music-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+    driver: local

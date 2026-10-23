@@ -17,7 +17,9 @@ import {
   providedIn: 'root'
 })
 export class ApiService {
-  private readonly baseUrl = 'http://localhost:8080/api/v1';
+  private readonly baseUrl = (typeof window !== 'undefined' && window.location.hostname === 'localhost' && window.location.port === '4200')
+    ? 'http://localhost:8080/api/v1'
+    : '/api/v1';
 
   // Reactive State Signals
   readonly isEditor = signal<boolean>(false);
