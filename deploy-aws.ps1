@@ -200,7 +200,7 @@ $instanceResult = (aws ec2 run-instances `
     --key-name "ice-music-key" `
     --security-group-ids $sgId `
     --user-data $userDataBase64 `
-    --block-device-mappings "[{`"DeviceName`":`"/dev/xvda`",`"Ebs`":{`"VolumeSize`":20,`"VolumeType`":`"gp3`",`"DeleteOnTermination`":true}}]" `
+    --block-device-mappings "DeviceName=/dev/xvda,Ebs={VolumeSize=20,VolumeType=gp3,DeleteOnTermination=true}" `
     --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=ice-music-app-server},{Key=Project,Value=ICE-Music-Catalogue}]" `
     --region $Region | ConvertFrom-Json)
 
